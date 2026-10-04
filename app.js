@@ -7,7 +7,7 @@
   // ---- state ----
   var records = loadRecords();
   var currentRating = 0;        // overall rating
-  var currentPhoto = null;      // base64 data URL or null
+  var currentPhotos = [];       // array of base64 data URLs
   var editingId = null;         // id being edited, or null
   var currentLocation = null;   // { label, lat, lng } or null
 
@@ -25,8 +25,6 @@
   var starsEl = document.getElementById("stars");
   var photoInput = document.getElementById("photo");
   var photoPreview = document.getElementById("photo-preview");
-  var previewImg = document.getElementById("preview-img");
-  var removePhotoBtn = document.getElementById("remove-photo");
   var submitBtn = document.getElementById("submit-btn");
 
   var dishesList = document.getElementById("dishes-list");
@@ -47,6 +45,30 @@
   var dateInput = document.getElementById("date");
 
   // ============================================================
+  // CLOUD SYNC (optional, Firebase). Falls back to localStorage.
+  // ============================================================
+  var cloud = window.FoodDiaryCloud || null; // provided by firebase-config.js if set up
+  var cloudReady = false;
+  if (cloud && typeof cloud.init === "function") {
+    cloud.init({
+      onRecords: function (cloudRecords) {
+        // cloud is the source of truth once connected
+        records = cloudRecords || [];
+        saveLocalCache();
+        renderGallery();
+      },
+      onReady: function () {
+        cloudReady = true;
+        var badge = document.getElementById("sync-badge");
+        if (badge) { badge.textContent = "☁️ synced"; badge.className = "sync-badge on"; }
+      },
+      onError: function (msg) {
+        console.warn("Cloud sync error:", msg);
+      }
+    });
+  }
+
+  // ============================================================
   // MODAL
   // ============================================================
   openAddBtn.addEventListener("click", function () { openModal(); });
@@ -62,7 +84,6 @@
   function openModal() {
     overlay.classList.remove("hidden");
     document.body.classList.add("modal-open");
-    // map needs to recalculate size after being shown
     setTimeout(initOrResizeMap, 60);
   }
   function closeModal() {
@@ -94,7 +115,7 @@
   }
 
   // ============================================================
-  // DISHES (repeatable rows with name + rating + comment)
+  // DISHES
   // ============================================================
   addDishBtn.addEventListener("click", function () { addDishRow(); });
 
@@ -110,7 +131,6 @@
     nameEl.value = data.name || "";
     commentEl.value = data.comment || "";
     paintStars(dstars, rowRating);
-    // store rating on the row element itself
     row._rating = rowRating;
 
     dstars.forEach(function (st) {
@@ -146,22 +166,36 @@
   }
 
   // ============================================================
-  // PHOTO
+  // PHOTOS (multiple)
   // ============================================================
   photoInput.addEventListener("change", function () {
-    var file = photoInput.files[0];
-    if (!file) return;
-    resizeImage(file, 1000, function (dataUrl) {
-      currentPhoto = dataUrl;
-      previewImg.src = dataUrl;
-      photoPreview.classList.remove("hidden");
+    var files = Array.prototype.slice.call(photoInput.files);
+    if (!files.length) return;
+    var remaining = files.length;
+    files.forEach(function (file) {
+      resizeImage(file, 1000, function (dataUrl) {
+        currentPhotos.push(dataUrl);
+        remaining--;
+        if (remaining === 0) renderPhotoPreviews();
+      });
     });
+    photoInput.value = ""; // allow re-adding same file / more later
   });
-  removePhotoBtn.addEventListener("click", function () {
-    currentPhoto = null;
-    photoInput.value = "";
-    photoPreview.classList.add("hidden");
-  });
+
+  function renderPhotoPreviews() {
+    photoPreview.innerHTML = "";
+    currentPhotos.forEach(function (src, idx) {
+      var wrap = document.createElement("div");
+      wrap.className = "photo-thumb";
+      wrap.innerHTML = '<img src="' + src + '" alt="photo ' + (idx + 1) + '" />' +
+        '<button type="button" class="thumb-remove" aria-label="remove photo">✕</button>';
+      wrap.querySelector(".thumb-remove").addEventListener("click", function () {
+        currentPhotos.splice(idx, 1);
+        renderPhotoPreviews();
+      });
+      photoPreview.appendChild(wrap);
+    });
+  }
 
   function resizeImage(file, maxDim, cb) {
     var reader = new FileReader();
@@ -174,7 +208,7 @@
         var canvas = document.createElement("canvas");
         canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        try { cb(canvas.toDataURL("image/jpeg", 0.85)); }
+        try { cb(canvas.toDataURL("image/jpeg", 0.82)); }
         catch (err) { cb(e.target.result); }
       };
       img.onerror = function () { cb(e.target.result); };
@@ -184,10 +218,10 @@
   }
 
   // ============================================================
-  // MAP + LOCATION SEARCH (Leaflet + Nominatim, free/no key)
+  // MAP + LOCATION SEARCH (Leaflet + Nominatim)
   // ============================================================
   function initOrResizeMap() {
-    if (typeof L === "undefined") return; // Leaflet not loaded
+    if (typeof L === "undefined") return;
     if (!map) {
       map = L.map("map").setView([20, 0], 2);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -280,18 +314,23 @@
   // ============================================================
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    var existing = editingId ? findRecord(editingId) : null;
     var data = {
-      id: editingId || String(Date.now()),
+      id: editingId || String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
       place: document.getElementById("place").value.trim(),
       type: document.getElementById("type").value,
+      cuisine: document.getElementById("cuisine").value.trim(),
       date: document.getElementById("date").value,
       location: currentLocation,
+      currency: document.getElementById("currency").value,
       price: document.getElementById("price").value.trim(),
+      people: document.getElementById("people").value.trim(),
       dishes: collectDishes(),
       comments: document.getElementById("comments").value.trim(),
       rating: currentRating,
-      photo: currentPhoto,
-      createdAt: editingId ? findRecord(editingId).createdAt : Date.now()
+      photos: currentPhotos.slice(),
+      createdAt: existing ? existing.createdAt : Date.now(),
+      updatedAt: Date.now()
     };
 
     if (editingId) {
@@ -299,7 +338,7 @@
     } else {
       records.push(data);
     }
-    saveRecords();
+    persist(data, editingId ? "update" : "add");
     closeModal();
     renderGallery();
     celebrate();
@@ -308,16 +347,18 @@
   function resetForm() {
     form.reset();
     currentRating = 0;
-    currentPhoto = null;
+    currentPhotos = [];
     editingId = null;
     currentLocation = null;
     paintStars(starEls, 0);
-    photoPreview.classList.add("hidden");
+    photoPreview.innerHTML = "";
     dishesList.innerHTML = "";
-    addDishRow(); // start with one empty dish
+    addDishRow();
     locResults.classList.add("hidden");
     locResults.innerHTML = "";
     locChosen.textContent = "";
+    document.getElementById("currency").value = "£";
+    document.getElementById("people").value = "";
     if (marker && map) { map.removeLayer(marker); marker = null; }
     if (map) map.setView([20, 0], 2);
     dateInput.value = new Date().toISOString().slice(0, 10);
@@ -340,7 +381,7 @@
       if (!term) return true;
       var dishText = (r.dishes || []).map(function (d) { return d.name + " " + d.comment; }).join(" ");
       var locText = r.location ? r.location.label : "";
-      var hay = [r.place, dishText, r.comments, r.type, r.price, locText].join(" ").toLowerCase();
+      var hay = [r.place, r.cuisine, dishText, r.comments, r.type, r.price, locText].join(" ").toLowerCase();
       return hay.indexOf(term) !== -1;
     });
 
@@ -364,15 +405,35 @@
     list.forEach(function (r) { recordsEl.appendChild(buildCard(r)); });
   }
 
+  function getPhotos(r) {
+    if (r.photos && r.photos.length) return r.photos;
+    if (r.photo) return [r.photo]; // backward compatibility with old single-photo records
+    return [];
+  }
+
   function buildCard(r) {
     var card = document.createElement("div");
     card.className = "record-card";
+    var photos = getPhotos(r);
 
-    var media = r.photo
-      ? '<img class="card-photo" src="' + r.photo + '" alt="' + esc(r.place) + '" />'
-      : '<div class="card-no-photo">' + typeEmoji(r.type) + "</div>";
+    var media;
+    if (photos.length) {
+      var imgs = photos.map(function (src, i) {
+        return '<img class="card-photo' + (i === 0 ? " active" : "") + '" src="' + src + '" alt="' + esc(r.place) + '" />';
+      }).join("");
+      var nav = photos.length > 1
+        ? '<button class="card-photo-nav prev" aria-label="previous">‹</button>' +
+          '<button class="card-photo-nav next" aria-label="next">›</button>' +
+          '<span class="card-photo-count">1/' + photos.length + "</span>"
+        : "";
+      media = '<div class="card-photos">' + imgs + nav + "</div>";
+    } else {
+      media = '<div class="card-no-photo">' + typeEmoji(r.type) + "</div>";
+    }
 
     var stars = starString(r.rating);
+
+    var cuisineTag = r.cuisine ? '<span class="card-cuisine-tag">' + esc(r.cuisine) + "</span>" : "";
 
     var loc = "";
     if (r.location && (r.location.label || r.location.lat)) {
@@ -395,13 +456,14 @@
     }
 
     var rows = "";
-    if (r.price)    rows += '<p class="card-row"><b>💰 Price:</b> ' + esc(r.price) + "</p>";
+    var priceStr = formatPrice(r);
+    if (priceStr)   rows += '<p class="card-row"><b>💰 Price:</b> ' + esc(priceStr) + "</p>";
     if (r.comments) rows += '<p class="card-row"><b>💌 Notes:</b> ' + esc(r.comments) + "</p>";
 
     card.innerHTML =
       media +
       '<div class="card-body">' +
-        '<h3 class="card-title">' + esc(r.place) + "</h3>" +
+        '<h3 class="card-title">' + esc(r.place) + cuisineTag + "</h3>" +
         '<p class="card-meta">' + esc(r.type) + (r.date ? " · " + formatDate(r.date) : "") + "</p>" +
         '<div class="card-stars">' + stars + "</div>" +
         loc +
@@ -412,6 +474,21 @@
           '<button class="delete-btn">🗑️ delete</button>' +
         "</div>" +
       "</div>";
+
+    // photo carousel nav
+    if (photos.length > 1) {
+      var imgEls = card.querySelectorAll(".card-photo");
+      var countEl = card.querySelector(".card-photo-count");
+      var idx = 0;
+      function show(n) {
+        imgEls[idx].classList.remove("active");
+        idx = (n + photos.length) % photos.length;
+        imgEls[idx].classList.add("active");
+        countEl.textContent = (idx + 1) + "/" + photos.length;
+      }
+      card.querySelector(".prev").addEventListener("click", function () { show(idx - 1); });
+      card.querySelector(".next").addEventListener("click", function () { show(idx + 1); });
+    }
 
     card.querySelector(".edit-btn").addEventListener("click", function () { startEdit(r.id); });
     card.querySelector(".delete-btn").addEventListener("click", function () { deleteRecord(r.id); });
@@ -426,13 +503,15 @@
     modalTitle.textContent = "Edit this memory ✏️";
     document.getElementById("place").value = r.place || "";
     document.getElementById("type").value = r.type || "🍽️ Restaurant";
+    document.getElementById("cuisine").value = r.cuisine || "";
     document.getElementById("date").value = r.date || "";
+    document.getElementById("currency").value = r.currency || "£";
     document.getElementById("price").value = r.price || "";
+    document.getElementById("people").value = r.people || "";
     document.getElementById("comments").value = r.comments || "";
     currentRating = r.rating || 0;
     paintStars(starEls, currentRating);
 
-    // dishes
     dishesList.innerHTML = "";
     if (r.dishes && r.dishes.length) {
       r.dishes.forEach(function (d) { addDishRow(d); });
@@ -440,7 +519,6 @@
       addDishRow();
     }
 
-    // location
     currentLocation = r.location || null;
     showChosen();
     setTimeout(function () {
@@ -451,10 +529,8 @@
       }
     }, 80);
 
-    // photo
-    currentPhoto = r.photo || null;
-    if (currentPhoto) { previewImg.src = currentPhoto; photoPreview.classList.remove("hidden"); }
-    else { photoPreview.classList.add("hidden"); }
+    currentPhotos = getPhotos(r).slice();
+    renderPhotoPreviews();
 
     submitBtn.textContent = "💾 Update memory";
   }
@@ -464,20 +540,27 @@
     if (!r) return;
     if (!confirm('Delete the memory of "' + r.place + '"? This can\'t be undone.')) return;
     records = records.filter(function (x) { return x.id !== id; });
-    saveRecords();
+    persist({ id: id }, "delete");
     renderGallery();
   }
 
   // ============================================================
-  // STORAGE
+  // PERSISTENCE (cloud if available, else local)
   // ============================================================
+  function persist(record, action) {
+    saveLocalCache();
+    if (cloud && cloudReady) {
+      if (action === "delete") cloud.remove(record.id);
+      else cloud.save(record);
+    }
+  }
+  function saveLocalCache() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+    catch (e) { alert("Couldn't save locally — browser storage may be full (photos take space). Try fewer/smaller photos."); }
+  }
   function loadRecords() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
     catch (e) { return []; }
-  }
-  function saveRecords() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
-    catch (e) { alert("Couldn't save — browser storage may be full (photos take space). Try removing a photo."); }
   }
 
   // ============================================================
@@ -496,6 +579,13 @@
     var s = "";
     for (var i = 1; i <= 5; i++) s += i <= n ? "★" : "☆";
     return s;
+  }
+  function formatPrice(r) {
+    if (!r.price && !r.people) return "";
+    var parts = [];
+    if (r.price) parts.push((r.currency || "") + r.price);
+    if (r.people) parts.push("for " + r.people + (parseInt(r.people, 10) === 1 ? " person" : " people"));
+    return parts.join(" ");
   }
   function shortLoc(label) {
     if (!label) return "";
@@ -540,6 +630,6 @@
 
   // ---- initial paint ----
   paintStars(starEls, 0);
-  addDishRow(); // one empty dish ready in the form
+  addDishRow();
   renderGallery();
 })();

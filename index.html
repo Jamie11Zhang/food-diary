@@ -34,6 +34,7 @@
       <div class="title-block">
         <h1>Food Diary</h1>
         <p class="subtitle">every meal we share, kept forever ♡</p>
+        <span id="sync-badge" class="sync-badge" title="Set up Firebase in firebase-config.js to sync across devices">📱 this device only</span>
       </div>
       <button id="open-add" class="add-fab" title="Add a memory" aria-label="Add a memory">＋</button>
     </div>
@@ -103,6 +104,11 @@
           </div>
         </div>
 
+        <div class="field">
+          <label for="cuisine">Cuisine <span class="label-note">(optional)</span></label>
+          <input type="text" id="cuisine" name="cuisine" placeholder="e.g. Thai, Italian, Japanese..." />
+        </div>
+
         <!-- Location + map -->
         <div class="field">
           <label for="location-search">Location 📍</label>
@@ -118,8 +124,22 @@
 
         <div class="field-row">
           <div class="field">
-            <label for="price">Price (roughly)</label>
-            <input type="text" id="price" name="price" placeholder="e.g. $45 for two" />
+            <label>Price</label>
+            <div class="price-row">
+              <div class="price-amount">
+                <select id="currency" aria-label="currency">
+                  <option value="£">£</option>
+                  <option value="¥">¥ RMB</option>
+                  <option value="$">$</option>
+                  <option value="€">€</option>
+                </select>
+                <input type="text" id="price" name="price" inputmode="decimal" placeholder="amount" />
+              </div>
+              <div class="price-people">
+                <input type="number" id="people" name="people" min="1" step="1" placeholder="no." />
+                <span class="price-people-label">people</span>
+              </div>
+            </div>
           </div>
           <div class="field">
             <label>Our overall rating</label>
@@ -134,12 +154,9 @@
         </div>
 
         <div class="field">
-          <label for="photo">A photo of the moment 📸</label>
-          <input type="file" id="photo" name="photo" accept="image/*" />
-          <div id="photo-preview" class="photo-preview hidden">
-            <img id="preview-img" alt="preview" />
-            <button type="button" id="remove-photo" class="mini-btn">remove</button>
-          </div>
+          <label for="photo">Photos of the moment 📸 <span class="label-note">(add as many as you like)</span></label>
+          <input type="file" id="photo" name="photo" accept="image/*" multiple />
+          <div id="photo-preview" class="photo-grid"></div>
         </div>
 
         <!-- Dishes: repeatable, each with comment + rating -->
@@ -180,6 +197,7 @@
     </div>
   </template>
 
+  <script src="firebase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

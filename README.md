@@ -11,8 +11,13 @@ A cute, warm little website for recording the restaurants, cafés, dessert shops
 - **Fully responsive** — looks and works great on phones.
 - **Warm hand-written style** — baby-blue → buttery-cream background, handwritten fonts, floating food doodles, and a little heart celebration when you save. ✨
 
-## How your data is stored
-Everything is saved **locally in your own browser** (`localStorage`) — nothing is uploaded anywhere. Your memories stay on the device you add them on. (So the same memories won't automatically appear on a different device or browser.)
+## Cross-device sync (phone ↔ laptop)
+By default the app saves **locally in your browser**, so a memory added on your phone won't show on your laptop. To make both devices show the **same** memories, set up free Firebase sync — full step-by-step instructions are at the top of **`firebase-config.js`**. In short: create a free Firebase project, enable Firestore, copy the config keys into that file, then commit & push. A badge in the header shows **📱 this device only** until it's connected, then **☁️ synced**.
+
+Until you set that up, everything still works — it just stays on each device.
+
+## Fields recorded
+Place name, type, **cuisine** (e.g. Thai, Italian — optional), date, location (with map), **price** (currency + amount + number of people), overall rating, **multiple photos**, per-dish entries (name + comment + rating), and notes.
 
 ## Running it
 It's a plain static site — just open `index.html` in a browser, or visit the GitHub Pages link.
