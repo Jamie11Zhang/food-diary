@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Little Food Diary 🍰</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Gaegu:wght@400;700&family=Patrick+Hand&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍰</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- soft floating doodles in the background -->
+  <div class="doodles" aria-hidden="true">
+    <span style="top:8%; left:5%;">☕</span>
+    <span style="top:20%; right:7%;">🍰</span>
+    <span style="top:55%; left:4%;">🍜</span>
+    <span style="top:70%; right:6%;">🧁</span>
+    <span style="top:40%; left:48%;">🍓</span>
+    <span style="top:85%; left:30%;">🥐</span>
+  </div>
+
+  <header class="site-header">
+    <h1>Our Little Food Diary</h1>
+    <p class="subtitle">every meal we share, kept forever ♡</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="add">✏️ Add a memory</button>
+    <button class="tab-btn" data-tab="gallery">📖 Our records</button>
+  </nav>
+
+  <main>
+    <!-- ============ ADD FORM ============ -->
+    <section id="add" class="tab-panel active">
+      <div class="paper-card">
+        <h2 class="handwrite">Where did we go today?</h2>
+        <form id="record-form">
+          <div class="field">
+            <label for="place">Place name</label>
+            <input type="text" id="place" name="place" placeholder="e.g. Sunny Corner Café" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="type">Type</label>
+              <select id="type" name="type">
+                <option value="🍽️ Restaurant">🍽️ Restaurant</option>
+                <option value="☕ Café">☕ Café</option>
+                <option value="🧁 Dessert shop">🧁 Dessert shop</option>
+                <option value="🍜 Noodle / Ramen">🍜 Noodle / Ramen</option>
+                <option value="🍕 Fast / Casual">🍕 Fast / Casual</option>
+                <option value="🍸 Bar / Drinks">🍸 Bar / Drinks</option>
+                <option value="🌸 Other">🌸 Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="date">Date we went</label>
+              <input type="date" id="date" name="date" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="photo">A photo of the moment 📸</label>
+            <input type="file" id="photo" name="photo" accept="image/*" />
+            <div id="photo-preview" class="photo-preview hidden">
+              <img id="preview-img" alt="preview" />
+              <button type="button" id="remove-photo" class="mini-btn">remove</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="price">Price (roughly)</label>
+              <input type="text" id="price" name="price" placeholder="e.g. $45 for two" />
+            </div>
+            <div class="field">
+              <label>Our rating</label>
+              <div class="stars" id="stars" role="radiogroup" aria-label="rating">
+                <span class="star" data-value="1">★</span>
+                <span class="star" data-value="2">★</span>
+                <span class="star" data-value="3">★</span>
+                <span class="star" data-value="4">★</span>
+                <span class="star" data-value="5">★</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="dishes">Dishes we tried 🍴</label>
+            <textarea id="dishes" name="dishes" rows="2" placeholder="e.g. truffle pasta, matcha latte, strawberry cake..."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="taste">How did it taste? 😋</label>
+            <textarea id="taste" name="taste" rows="2" placeholder="e.g. the pasta was creamy & dreamy, the cake a little too sweet..."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="comments">Little notes & memories 💌</label>
+            <textarea id="comments" name="comments" rows="3" placeholder="anything we want to remember about today..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" id="submit-btn">💗 Save this memory</button>
+            <button type="button" class="ghost-btn hidden" id="cancel-edit">cancel edit</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ GALLERY ============ -->
+    <section id="gallery" class="tab-panel">
+      <div class="gallery-controls">
+        <input type="search" id="search" placeholder="🔍 search places, dishes, notes..." />
+        <select id="filter-type">
+          <option value="">All types</option>
+          <option value="🍽️ Restaurant">🍽️ Restaurant</option>
+          <option value="☕ Café">☕ Café</option>
+          <option value="🧁 Dessert shop">🧁 Dessert shop</option>
+          <option value="🍜 Noodle / Ramen">🍜 Noodle / Ramen</option>
+          <option value="🍕 Fast / Casual">🍕 Fast / Casual</option>
+          <option value="🍸 Bar / Drinks">🍸 Bar / Drinks</option>
+          <option value="🌸 Other">🌸 Other</option>
+        </select>
+        <select id="sort-by">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="rating">Highest rated</option>
+        </select>
+      </div>
+
+      <p class="count-line" id="count-line"></p>
+      <div id="records" class="records-grid"></div>
+      <div id="empty-state" class="empty-state hidden">
+        <p class="big-emoji">🍽️💕</p>
+        <p>No memories yet! Add your first one on the <b>“Add a memory”</b> tab.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    made with ♡ for us • your memories are saved right here in this browser
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
