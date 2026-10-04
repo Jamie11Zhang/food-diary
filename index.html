@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Our Little Food Diary 🍰</title>
+  <title>Food Diary 🍰</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Gaegu:wght@400;700&family=Patrick+Hand&display=swap"
     rel="stylesheet"
   />
+  <!-- Leaflet (free OpenStreetMap maps) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍰</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -25,96 +30,18 @@
   </div>
 
   <header class="site-header">
-    <h1>Our Little Food Diary</h1>
-    <p class="subtitle">every meal we share, kept forever ♡</p>
+    <div class="header-inner">
+      <div class="title-block">
+        <h1>Food Diary</h1>
+        <p class="subtitle">every meal we share, kept forever ♡</p>
+      </div>
+      <button id="open-add" class="add-fab" title="Add a memory" aria-label="Add a memory">＋</button>
+    </div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab-btn active" data-tab="add">✏️ Add a memory</button>
-    <button class="tab-btn" data-tab="gallery">📖 Our records</button>
-  </nav>
-
   <main>
-    <!-- ============ ADD FORM ============ -->
-    <section id="add" class="tab-panel active">
-      <div class="paper-card">
-        <h2 class="handwrite">Where did we go today?</h2>
-        <form id="record-form">
-          <div class="field">
-            <label for="place">Place name</label>
-            <input type="text" id="place" name="place" placeholder="e.g. Sunny Corner Café" required />
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="type">Type</label>
-              <select id="type" name="type">
-                <option value="🍽️ Restaurant">🍽️ Restaurant</option>
-                <option value="☕ Café">☕ Café</option>
-                <option value="🧁 Dessert shop">🧁 Dessert shop</option>
-                <option value="🍜 Noodle / Ramen">🍜 Noodle / Ramen</option>
-                <option value="🍕 Fast / Casual">🍕 Fast / Casual</option>
-                <option value="🍸 Bar / Drinks">🍸 Bar / Drinks</option>
-                <option value="🌸 Other">🌸 Other</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="date">Date we went</label>
-              <input type="date" id="date" name="date" />
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="photo">A photo of the moment 📸</label>
-            <input type="file" id="photo" name="photo" accept="image/*" />
-            <div id="photo-preview" class="photo-preview hidden">
-              <img id="preview-img" alt="preview" />
-              <button type="button" id="remove-photo" class="mini-btn">remove</button>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="price">Price (roughly)</label>
-              <input type="text" id="price" name="price" placeholder="e.g. $45 for two" />
-            </div>
-            <div class="field">
-              <label>Our rating</label>
-              <div class="stars" id="stars" role="radiogroup" aria-label="rating">
-                <span class="star" data-value="1">★</span>
-                <span class="star" data-value="2">★</span>
-                <span class="star" data-value="3">★</span>
-                <span class="star" data-value="4">★</span>
-                <span class="star" data-value="5">★</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="dishes">Dishes we tried 🍴</label>
-            <textarea id="dishes" name="dishes" rows="2" placeholder="e.g. truffle pasta, matcha latte, strawberry cake..."></textarea>
-          </div>
-
-          <div class="field">
-            <label for="taste">How did it taste? 😋</label>
-            <textarea id="taste" name="taste" rows="2" placeholder="e.g. the pasta was creamy & dreamy, the cake a little too sweet..."></textarea>
-          </div>
-
-          <div class="field">
-            <label for="comments">Little notes & memories 💌</label>
-            <textarea id="comments" name="comments" rows="3" placeholder="anything we want to remember about today..."></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="primary-btn" id="submit-btn">💗 Save this memory</button>
-            <button type="button" class="ghost-btn hidden" id="cancel-edit">cancel edit</button>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <!-- ============ GALLERY ============ -->
-    <section id="gallery" class="tab-panel">
+    <!-- ============ GALLERY (main page) ============ -->
+    <section id="gallery">
       <div class="gallery-controls">
         <input type="search" id="search" placeholder="🔍 search places, dishes, notes..." />
         <select id="filter-type">
@@ -138,7 +65,7 @@
       <div id="records" class="records-grid"></div>
       <div id="empty-state" class="empty-state hidden">
         <p class="big-emoji">🍽️💕</p>
-        <p>No memories yet! Add your first one on the <b>“Add a memory”</b> tab.</p>
+        <p>No memories yet! Tap the <b>＋</b> button up top to add your first one.</p>
       </div>
     </section>
   </main>
@@ -146,6 +73,114 @@
   <footer class="site-footer">
     made with ♡ for us • your memories are saved right here in this browser
   </footer>
+
+  <!-- ============ ADD / EDIT MODAL ============ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal paper-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button type="button" id="close-modal" class="close-x" aria-label="Close">✕</button>
+      <h2 class="handwrite" id="modal-title">Where did we go? 🍴</h2>
+
+      <form id="record-form">
+        <div class="field">
+          <label for="place">Place name</label>
+          <input type="text" id="place" name="place" placeholder="e.g. Sunny Corner Café" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="type">Type</label>
+            <select id="type" name="type">
+              <option value="🍽️ Restaurant">🍽️ Restaurant</option>
+              <option value="☕ Café">☕ Café</option>
+              <option value="🧁 Dessert shop">🧁 Dessert shop</option>
+              <option value="🍜 Noodle / Ramen">🍜 Noodle / Ramen</option>
+              <option value="🍕 Fast / Casual">🍕 Fast / Casual</option>
+              <option value="🍸 Bar / Drinks">🍸 Bar / Drinks</option>
+              <option value="🌸 Other">🌸 Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="date">Date we went</label>
+            <input type="date" id="date" name="date" />
+          </div>
+        </div>
+
+        <!-- Location + map -->
+        <div class="field">
+          <label for="location-search">Location 📍</label>
+          <div class="loc-search-row">
+            <input type="text" id="location-search" placeholder="type a postcode, area or place, then Search" />
+            <button type="button" id="loc-search-btn" class="mini-btn solid">Search</button>
+          </div>
+          <div id="loc-results" class="loc-results hidden"></div>
+          <div id="map" class="map-box"></div>
+          <p id="loc-chosen" class="loc-chosen"></p>
+          <p class="loc-hint">Tip: you can also click directly on the map to drop a pin.</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="price">Price (roughly)</label>
+            <input type="text" id="price" name="price" placeholder="e.g. $45 for two" />
+          </div>
+          <div class="field">
+            <label>Our overall rating</label>
+            <div class="stars" id="stars" role="radiogroup" aria-label="overall rating">
+              <span class="star" data-value="1">★</span>
+              <span class="star" data-value="2">★</span>
+              <span class="star" data-value="3">★</span>
+              <span class="star" data-value="4">★</span>
+              <span class="star" data-value="5">★</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="photo">A photo of the moment 📸</label>
+          <input type="file" id="photo" name="photo" accept="image/*" />
+          <div id="photo-preview" class="photo-preview hidden">
+            <img id="preview-img" alt="preview" />
+            <button type="button" id="remove-photo" class="mini-btn">remove</button>
+          </div>
+        </div>
+
+        <!-- Dishes: repeatable, each with comment + rating -->
+        <div class="field">
+          <label>Dishes we tried 🍴</label>
+          <div id="dishes-list" class="dishes-list"></div>
+          <button type="button" id="add-dish" class="add-dish-btn">＋ add another dish</button>
+        </div>
+
+        <div class="field">
+          <label for="comments">Little notes & memories 💌</label>
+          <textarea id="comments" name="comments" rows="3" placeholder="anything we want to remember about today..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn" id="submit-btn">💗 Save this memory</button>
+          <button type="button" class="ghost-btn" id="cancel-edit">cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- template for a single dish row -->
+  <template id="dish-template">
+    <div class="dish-row">
+      <div class="dish-top">
+        <input type="text" class="dish-name" placeholder="dish name (e.g. truffle pasta)" />
+        <button type="button" class="dish-remove" aria-label="remove dish">🗑️</button>
+      </div>
+      <div class="dish-stars" role="radiogroup" aria-label="dish rating">
+        <span class="dstar" data-value="1">★</span>
+        <span class="dstar" data-value="2">★</span>
+        <span class="dstar" data-value="3">★</span>
+        <span class="dstar" data-value="4">★</span>
+        <span class="dstar" data-value="5">★</span>
+      </div>
+      <input type="text" class="dish-comment" placeholder="how was it? (e.g. creamy & dreamy)" />
+    </div>
+  </template>
 
   <script src="app.js"></script>
 </body>
