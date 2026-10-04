@@ -358,7 +358,7 @@
     }
     emptyState.classList.add("hidden");
     countLine.textContent = list.length
-      ? list.length + (list.length === 1 ? " sweet memory ♡" : " sweet memories ♡")
+      ? list.length + (list.length === 1 ? " memory ♡" : " memories ♡")
       : "No matches — try a different search 🔍";
 
     list.forEach(function (r) { recordsEl.appendChild(buildCard(r)); });
